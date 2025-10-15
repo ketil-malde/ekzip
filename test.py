@@ -3,16 +3,16 @@ import wavelets as W
 import numpy as np
 
 # Get a RAW3 datagram
-INDEX=108
+INDEX = 108
 ix = ektools.index('../CRIMAC-KoronaScript/cr_out/2023001004-D20230321-T082157.raw')
 assert ix[INDEX][1] == 'RAW3', f'Wrong datagram? {ix[INDEX][:3]}'
 dg = ektools.parse(ix[INDEX][3])
 
-HPSEARCH=True
-PRINT=False
-PLOT=True
-TIME=False
-CLIP=True
+HPSEARCH = False
+PRINT = False
+PLOT = True
+TIME = False
+CLIP = True
 
 # Using log data completely breaks everything. Why?
 # mydata = np.log(dg['complex'][:, 0].copy())
@@ -36,13 +36,13 @@ if HPSEARCH:
 
         reconstructed = W.decompress(compressed, wvl, lev, shp)[:mydata.shape[0]]
         if PRINT:
-            print(mydata[PRINT:PRINT+10])
-            print(reconstructed[PRINT:PRINT+10])
+            print(mydata[PRINT:PRINT + 10])
+            print(reconstructed[PRINT:PRINT + 10])
 
         err = np.abs(mydata - reconstructed)
         mse = np.mean(err ** 2)
-        relerr = np.mean(err/np.abs(mydata))
-        print(f'level={level:<2d} thresh={thresh:.3f} size={compsize/1000:3.1f}k reduction={(1-compsize/mydatasize)*100:.1f}% mse={mse:.3e} rel={relerr:.2f}')
+        relerr = np.mean(err / np.abs(mydata))
+        print(f'level={level:<2d} thresh={thresh:.3f} size={compsize / 1000:3.1f}k reduction={(1 - compsize / mydatasize) * 100:.1f}% mse={mse:.3e} rel={relerr:.2f}')
     print()
 
 
@@ -63,13 +63,14 @@ if PLOT:
     # Assume mydata and reconstructed are your complex signals
     plt.figure(figsize=(10, 5))
     plt.plot(np.abs(mydata), label='Original', alpha=0.7)
-    plt.plot(np.abs(reconstr1), label=f'Level=3 thr={r1}', alpha=0.7)
+    # plt.plot(np.abs(reconstr1), label=f'Level=3 thr={r1}', alpha=0.7)
     plt.plot(np.abs(reconstr2), label=f'Level=2 thr={r2}', alpha=0.7)
-    plt.plot(np.abs(reconstr2), label=f'Level=2 thr={r3}', alpha=0.7)    
+    plt.plot(np.abs(mydata-reconstr2), label='Error', alpha=0.7)
+    # plt.plot(np.abs(reconstr2), label=f'Level=2 thr={r3}', alpha=0.7)
     plt.title('Signal Magnitude: Original vs Reconstructed')
     plt.xlabel('Sample Index')
     plt.ylabel('Magnitude')
-    plt.yscale('log')
+    #plt.yscale('log')
     plt.legend()
     plt.grid(True)
     plt.show()
