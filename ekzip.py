@@ -24,15 +24,16 @@ def raw2raz(data):  # (dgram):
         case 'RAW3':
             data['type'] = 'RAZ' + data['type'][3]
 
-            zcomplex = []
-            for i in range(data['n_complex']):
-                zd, wl, lv, sh = W.compress(data['complex'][:, i], wavelet='db4', level=3, threshold_ratio=0.2)
-                zcomplex.append(zd)  # oh fuck, it's a tuple, real/imag
+            if data['n_complex'] > 0:
+                zcomplex = []
+                for i in range(data['n_complex']):
+                    zd, wl, lv, sh = W.compress(data['complex'][:, i], wavelet='db4', level=3, threshold_ratio=0.2)
+                    zcomplex.append(zd)  # oh fuck, it's a tuple, real/imag
 
-            data['zlevel'] = lv
-            data['zshapes'] = [s[0] for s in sh]
-            data['zcomplex'] = zcomplex
-            del data['complex']
+                data['zlevel'] = lv
+                data['zshapes'] = [s[0] for s in sh]
+                data['zcomplex'] = zcomplex
+                del data['complex']
         case _:
             assert False, f'Datagram type {data['type']} not supported.'
 
@@ -46,16 +47,17 @@ def raz2raw(data):  # dgram:
         case 'RAZ3':
             data['type'] = 'RAW' + data['type'][3]
 
-            level = data['zlevel']
-            shapes = [(s,) for s in data['zshapes']]
-            complex = []
-            for i in range(data['n_complex']):
-                zd = W.decompress(data['zcomplex'][i], 'db4', level=level, shapes=shapes)
-                complex.append(zd)
-            data['complex'] = np.column_stack(complex)
-            del data['zlevel']
-            del data['zshapes']
-            del data['zcomplex']
+            if data['n_complex'] > 0:
+                level = data['zlevel']
+                shapes = [(s,) for s in data['zshapes']]
+                complex = []
+                for i in range(data['n_complex']):
+                    zd = W.decompress(data['zcomplex'][i], 'db4', level=level, shapes=shapes)
+                    complex.append(zd)
+                data['complex'] = np.column_stack(complex)
+                del data['zlevel']
+                del data['zshapes']
+                del data['zcomplex']
         case _:
             assert False, f'Datagram type {data['type']} not supported.'
 
