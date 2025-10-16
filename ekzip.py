@@ -18,47 +18,56 @@ def dgram_write(f, dgram):
 
 
 def raw2raz(data):  # (dgram):
-    # data = SimradRawParser().from_string(dgram, len(dgram))
-    data['type'] = 'RAZ' + data['type'][3]
+    '''Convert the dict representing a RAW type datagram into a RAZ compressed datatgram'''
+    print(data)
+    match data['type']:
+        case 'RAW3':
+            data['type'] = 'RAZ' + data['type'][3]
 
-    zcomplex = []
-    for i in range(data['n_complex']):
-        zd, wl, lv, sh = W.compress(data['complex'][:, i], wavelet='db4', level=3, threshold_ratio=0.2)
-        zcomplex.append(zd)  # oh fuck, it's a tuple, real/imag
+            zcomplex = []
+            for i in range(data['n_complex']):
+                zd, wl, lv, sh = W.compress(data['complex'][:, i], wavelet='db4', level=3, threshold_ratio=0.2)
+                zcomplex.append(zd)  # oh fuck, it's a tuple, real/imag
 
-    data['zlevel'] = lv
-    data['zshapes'] = [s[0] for s in sh]
-    data['zcomplex'] = zcomplex
+            data['zlevel'] = lv
+            data['zshapes'] = [s[0] for s in sh]
+            data['zcomplex'] = zcomplex
+            del data['complex']
+        case _:
+            assert False, f'Datagram type {data['type']} not supported.'
 
-    # return SimradRawZParser().to_string(data)
-    del data['complex']
     return data
 
 
 def raz2raw(data):  # dgram:
+    '''Convert the dict representing a RAZ compressed datagram into a RAW datatgram'''
     # data = SimradRawZParser().from_string(dgram, len(dgram))
-    data['type'] = 'RAW3'  # + data['type'][3]  # why the fuck doesn't it work?
+    match data['type']:
+        case 'RAZ3':
+            data['type'] = 'RAW' + data['type'][3]
 
-    level = data['zlevel']
-    shapes = [(s,) for s in data['zshapes']]
-    complex = []
-    for i in range(data['n_complex']):
-        zd = W.decompress(data['zcomplex'][i], 'db4', level=level, shapes=shapes)
-        complex.append(zd)
-    data['complex'] = np.column_stack(complex)
-    del data['zlevel']
-    del data['zshapes']
-    del data['zcomplex']
-    # return SimradRawParser().to_string(data)
+            level = data['zlevel']
+            shapes = [(s,) for s in data['zshapes']]
+            complex = []
+            for i in range(data['n_complex']):
+                zd = W.decompress(data['zcomplex'][i], 'db4', level=level, shapes=shapes)
+                complex.append(zd)
+            data['complex'] = np.column_stack(complex)
+            del data['zlevel']
+            del data['zshapes']
+            del data['zcomplex']
+        case _:
+            assert False, f'Datagram type {data['type']} not supported.'
+
     return data
 
 
 def compress(fname, ):
+    '''Process a RAW file and replace RAWx datagrams with RAZx compressed datagrams.'''
     with open(fname + '.z', 'wb') as outfile:
         for dgram in ekfile(fname).datagrams():
             if dgram[0] == 'RAW3':   # replace with compressed version
                 data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
-                print(data)
                 zdata = raw2raz(data)
                 zd = SimradRawZParser().to_string(zdata)
                 outfile.write(zd)
@@ -67,12 +76,12 @@ def compress(fname, ):
 
 
 def decompress(fname):
+    '''Process a RAW file and replace RAZx datagrams with RAWx uncompressed datagrams.'''    
     with open(fname + '.new', 'wb') as outfile:
         for dgram in ekfile(fname + '.z').datagrams():
             if dgram[0] == 'RAZ3':
                 zdata = SimradRawZParser().from_string(dgram[3], len(dgram[3]))
                 rdata = raz2raw(zdata)
-                print(rdata)
                 ndgram = SimradRawParser().to_string(rdata)
                 outfile.write(ndgram)
             else:
