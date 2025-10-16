@@ -14,7 +14,10 @@ PLOT = True
 TIME = False
 CLIP = True
 
-# Using log data completely breaks everything. Why?
+# Using log data completely breaks everything, as most of the variance is now in the very low values.
+# (e.g. noise that varies between 1e-9 and 1e-8 now becomes -8 to -9, a differenc of 1 same as the
+# much more important difference between 1e0 and 1e-1, or 1 and 0.1)
+
 # mydata = np.log(dg['complex'][:, 0].copy())
 mydata = dg['complex'][:, 0].copy()
 mydatasize = mydata.size * mydata.itemsize

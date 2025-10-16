@@ -22,17 +22,26 @@ def raw2raz(data, wavelet='db4', level=3, threshold_ratio=0.2):  # (dgram):
     match data['type']:
         case 'RAW3':
             data['type'] = 'RAZ' + data['type'][3]
+            data['zlevel'] = level
 
             if data['n_complex'] > 0:
                 zcomplex = []
                 for i in range(data['n_complex']):
-                    zd, wl, lv, sh = W.compress(data['complex'][:, i], wavelet=wavelet, level=level, threshold_ratio=threshold_ratio)
+                    zd, wl, lv, sh = W.compress(data['complex'][:, i],
+                                                wavelet=wavelet, level=level, threshold_ratio=threshold_ratio)
                     zcomplex.append(zd)  # oh fuck, it's a tuple, real/imag
 
                 data['zlevel'] = lv
                 data['zshapes'] = [s[0] for s in sh]
                 data['zcomplex'] = zcomplex
                 del data['complex']
+            if data['power'] is not None:  # set to None if not present by the Simrad parser
+                zd, wl, lv, sh = W.compress1(data['power'], wavelet=wavelet, level=level, threshold_ratio=threshold_ratio)
+                data['zpower'] = zd
+                data['zpshapes'] = [s[0] for s in sh]
+            if data['angle'] is not None:  # as above
+                for i in range(data['count']):
+                    pass
         case _:
             assert False, f'Datagram type {data['type']} not supported.'
 
@@ -45,9 +54,9 @@ def raz2raw(data):  # dgram:
     match data['type']:
         case 'RAZ3':
             data['type'] = 'RAW' + data['type'][3]
+            level = data['zlevel']
 
             if data['n_complex'] > 0:
-                level = data['zlevel']
                 shapes = [(s,) for s in data['zshapes']]
                 complex = []
                 for i in range(data['n_complex']):
@@ -56,6 +65,9 @@ def raz2raw(data):  # dgram:
                 data['complex'] = np.column_stack(complex)
             else:
                 data['complex'] = None
+
+            if 'zpower' in data.keys() and data['zpower'] is not None:
+                data['power'] = W.decompress1(data['zpower'], 'db4', level=level, shapes=data['zpshapes'])
             del data['zlevel']
             del data['zshapes']
             del data['zcomplex']
