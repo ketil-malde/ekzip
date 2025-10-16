@@ -55,9 +55,11 @@ def raz2raw(data):  # dgram:
                     zd = W.decompress(data['zcomplex'][i], 'db4', level=level, shapes=shapes)
                     complex.append(zd)
                 data['complex'] = np.column_stack(complex)
-                del data['zlevel']
-                del data['zshapes']
-                del data['zcomplex']
+            else:
+                data['complex'] = None
+            del data['zlevel']
+            del data['zshapes']
+            del data['zcomplex']
         case _:
             assert False, f'Datagram type {data['type']} not supported.'
 

@@ -189,11 +189,15 @@ class SimradRawZParser(_SimradDatagramParser):
                     data['zcomplex'] = zcomplex
                 else:
                     data['zcomplex'] = None
-
+                    data['zlevel'] = None
+                    data['zshapes'] = None
             else:
+                # Does this make sense here?  If count is zero...then what?  Why not None, like above?
                 data['power'] = np.empty((0,), dtype='int16')
                 data['angle'] = np.empty((0,), dtype='int8')
-                data['complex'] = np.empty((0,), dtype='complex64')
+                data['zcomplex'] = None
+                data['zlevel'] = None
+                data['zshapes'] = None
                 data['n_complex'] = 0
 
         return data
@@ -257,6 +261,7 @@ class SimradRawZParser(_SimradDatagramParser):
                 if data['data_type'] & 0b1100:
                     # Write the compressed complex data
                     if data['data_type'] & 0b0100:
+                        # This shouldn't matter, our zcomplex field is written as it is.
                         # pack as 16 bit floats - struct doesn't have support for
                         # half floats so we use just pack them as bytes.
                         # datagram_fmt += '%dB' % (data['complex'].shape[0] * 2 * 8)
