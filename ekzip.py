@@ -17,9 +17,8 @@ def dgram_write(f, dgram):
     f.write(hdr)
 
 
-def raw2raz(data):  # (dgram):
+def raw2raz(data, wavelet='db4', level=3, threshold_ratio=0.2):  # (dgram):
     '''Convert the dict representing a RAW type datagram into a RAZ compressed datatgram'''
-    print(data)
     match data['type']:
         case 'RAW3':
             data['type'] = 'RAZ' + data['type'][3]
@@ -27,7 +26,7 @@ def raw2raz(data):  # (dgram):
             if data['n_complex'] > 0:
                 zcomplex = []
                 for i in range(data['n_complex']):
-                    zd, wl, lv, sh = W.compress(data['complex'][:, i], wavelet='db4', level=3, threshold_ratio=0.2)
+                    zd, wl, lv, sh = W.compress(data['complex'][:, i], wavelet=wavelet, level=level, threshold_ratio=threshold_ratio)
                     zcomplex.append(zd)  # oh fuck, it's a tuple, real/imag
 
                 data['zlevel'] = lv
