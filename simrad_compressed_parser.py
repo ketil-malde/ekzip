@@ -170,10 +170,10 @@ class SimradRawZParser(_SimradDatagramParser):
                 #  unpack the compressed complex samples
                 if (data['n_complex'] > 0):
                     # read level parameter and lenght of shapes array
-                    data['zlevel'], zshapelen = struct.unpack('ii', raw_string[indx:indx+8])
+                    data['zlevel'], zshapelen = struct.unpack('ii', raw_string[indx:indx + 8])
                     indx += 8
                     # read the zshapes array
-                    data['zshapes'] = struct.unpack("%di" % zshapelen, raw_string[indx:indx+4*zshapelen])
+                    data['zshapes'] = struct.unpack("%di" % zshapelen, raw_string[indx:indx + 4 * zshapelen])
                     indx += 4 * zshapelen
 
                     # read zcomplex vectors (real and imag)
@@ -181,9 +181,9 @@ class SimradRawZParser(_SimradDatagramParser):
                     for i in range(data['n_complex']):
                         zc = []
                         for j in [0, 1]:
-                            zlen = struct.unpack('i', raw_string[indx:indx+4])[0]
+                            zlen = struct.unpack('i', raw_string[indx:indx + 4])[0]
                             indx += 4
-                            zc.append(raw_string[indx:indx+zlen])
+                            zc.append(raw_string[indx:indx + zlen])
                             indx += zlen
                         zcomplex.append((zc[0], zc[1]))
                     data['zcomplex'] = zcomplex
@@ -206,7 +206,7 @@ class SimradRawZParser(_SimradDatagramParser):
         if version == 0:
 
             if data['count'] > 0 and data['mode'] == 0:
-                    data['count'] = 0
+                data['count'] = 0
 
             for field in self.header_fields(version):
                 if isinstance(data[field], str):
@@ -223,7 +223,7 @@ class SimradRawZParser(_SimradDatagramParser):
                     n_angles = data['count'] * 2
                     datagram_fmt += '%db' % (n_angles)
                     #  reshape the angle array for writing
-                    data['angle'].shape=(n_angles,)
+                    data['angle'].shape = (n_angles,)
                     datagram_contents.extend(data['angle'])
 
         elif version == 3 or version == 4:
@@ -251,7 +251,7 @@ class SimradRawZParser(_SimradDatagramParser):
                     n_angles = data['count'] * 2
                     datagram_fmt += '%db' % (n_angles)
                     #  reshape the angle array for writing
-                    data['angle'].shape=(n_angles,)
+                    data['angle'].shape = (n_angles,)
                     datagram_contents.extend(data['angle'])
 
                 if data['data_type'] & 0b1100:
@@ -277,6 +277,6 @@ class SimradRawZParser(_SimradDatagramParser):
                         # datagram_fmt += '%dB' % (data['complex'].shape[0] * 4 * 8)
                     # outbytes = data['complex'].tobytes()  # view(np.ubyte)
                     # print('Packing, shape, size, len:', outbytes.shape, outbytes.size, len(outbytes))
-                    #datagram_contents.extend(outbytes)
+                    # datagram_contents.extend(outbytes)
 
         return struct.pack(datagram_fmt, *datagram_contents)
