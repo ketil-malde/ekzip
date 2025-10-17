@@ -7,7 +7,6 @@ CAST = np.float16
 
 def compress1(signal, wavelet='db4', level=4, threshold_ratio=0.10):
     '''Apply wavelet compression to a real-valued vector'''
-    print('Cp1: input shape:', signal.shape)
     coeffs = pywt.wavedec(signal, wavelet, level=level, mode='periodic')
     cshapes = [c.shape for c in coeffs]
     coeffs_flat = np.concatenate([c for c in coeffs])

@@ -141,8 +141,14 @@ class SimradRawZParser(_SimradDatagramParser):
                 indx = self.header_size(version)
 
                 if data['data_type'] & 0b1:
-                    data['power'] = np.frombuffer(raw_string[indx:indx + block_size], dtype='int16')
-                    indx += block_size
+                    print('Unpacking zpower')
+                    zpowerlen = struct.unpack('i', raw_string[indx:indx + 4])[0]
+                    print(zpowerlen)
+                    indx += 4
+                    data['zpower'] = np.frombuffer(raw_string[indx:indx + 4 * zpowerlen])
+                    indx += 4 * zpowerlen
+                    # data['power'] = np.frombuffer(raw_string[indx:indx + block_size], dtype='int16')
+                    # indx += block_size
                 else:
                     data['power'] = None
 
@@ -221,7 +227,7 @@ class SimradRawZParser(_SimradDatagramParser):
 
                 if int(data['mode']) & 0x1:
                     datagram_fmt += '%dh' % (data['count'])
-                    datagram_contents.extend(data['power'])
+                    datagram_contents.append(data['power'])
 
                 if int(data['mode']) & 0x2:
                     n_angles = data['count'] * 2
@@ -246,9 +252,15 @@ class SimradRawZParser(_SimradDatagramParser):
             if data['count'] > 0:
 
                 if data['data_type'] & 0b0001:
-                    # Add the power data
-                    datagram_fmt += '%dh' % (data['count'])
-                    datagram_contents.extend(data['power'])
+                    print('Packing zpower')
+                    # Add the compressed power data
+                    # datagram_fmt += '%dh' % (data['count'])
+                    # datagram_contents.extend(data['power'])
+                    zpowerlen = len(data['zpower'])
+                    print(zpowerlen)
+                    datagram_fmt += 'i%di' % zpowerlen
+                    datagram_contents.append(zpowerlen)
+                    datagram_contents.extend(data['zpower'])
 
                 if data['data_type'] & 0b0010:
                     # Add the angle data
@@ -273,7 +285,7 @@ class SimradRawZParser(_SimradDatagramParser):
                             datagram_contents.append(d)
                         for i in range(data['n_complex']):
                             zdata = data['zcomplex'][i]
-                            for j in [0,1]:  # real and imag
+                            for j in [0, 1]:  # real and imag
                                 zlen = len(zdata[j])
                                 datagram_fmt += 'i%dB' % zlen
                                 datagram_contents.append(zlen)

@@ -19,6 +19,7 @@ def dgram_write(f, dgram):
 
 def raw2raz(data, wavelet='db4', level=3, threshold_ratio=0.2):  # (dgram):
     '''Convert the dict representing a RAW type datagram into a RAZ compressed datatgram'''
+    data = data.copy()
     match data['type']:
         case 'RAW3':
             data['type'] = 'RAZ' + data['type'][3]
@@ -39,6 +40,7 @@ def raw2raz(data, wavelet='db4', level=3, threshold_ratio=0.2):  # (dgram):
                 zd, wl, lv, sh = W.compress1(data['power'], wavelet=wavelet, level=level, threshold_ratio=threshold_ratio)
                 data['zpower'] = zd
                 data['zpshapes'] = [s[0] for s in sh]
+                del data['power']
             if data['angle'] is not None:  # as above
                 for i in range(data['count']):
                     pass
@@ -50,7 +52,7 @@ def raw2raz(data, wavelet='db4', level=3, threshold_ratio=0.2):  # (dgram):
 
 def raz2raw(data):  # dgram:
     '''Convert the dict representing a RAZ compressed datagram into a RAW datatgram'''
-    # data = SimradRawZParser().from_string(dgram, len(dgram))
+    data = data.copy()
     match data['type']:
         case 'RAZ3':
             data['type'] = 'RAW' + data['type'][3]
@@ -68,6 +70,8 @@ def raz2raw(data):  # dgram:
 
             if 'zpower' in data.keys() and data['zpower'] is not None:
                 data['power'] = W.decompress1(data['zpower'], 'db4', level=level, shapes=data['zpshapes'])
+                del data['zpower']
+
             del data['zlevel']
             del data['zshapes']
             del data['zcomplex']
@@ -77,7 +81,36 @@ def raz2raw(data):  # dgram:
     return data
 
 
-def compress(fname, ):
+def comptest(fname):
+    '''Test compression functionality by compressing and decompressing all RAW datagrams'''
+    for dgram in ekfile(fname).datagrams():
+        if dgram[0] == 'RAW3':
+            data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
+            zdata = raw2raz(data)
+            zd = SimradRawZParser().to_string(zdata)
+            zr = SimradRawZParser().from_string(zd[4:], len(zd) - 8)
+            rdata = raz2raw(zr)
+
+            print('Differences:')
+            for k in zdata.keys():
+                if k not in data.keys():
+                    print(f'Compressed data contains new field "{k}".')
+            for k in data.keys():
+                if k not in zdata.keys():
+                    print(f'Compressed data do not contain field "{k}".')
+            print('Warnings:')                    
+            for k in rdata.keys():
+                if k not in data.keys():
+                    print(f'Warning: found field "{k}" in recovered data, not present in original')
+                elif type(data[k]) is not type(rdata[k]):
+                    print(f'Warning: field "{k}" does not have correct type: {type(data[k])} vs {type(rdata[k])}')
+            for k in data.keys():
+                if k not in rdata.keys():
+                    print(f'Warning: did not find field "{k}" in recovered data')
+            print()
+
+
+def compress(fname):
     '''Process a RAW file and replace RAWx datagrams with RAZx compressed datagrams.'''
     with open(fname + '.z', 'wb') as outfile:
         for dgram in ekfile(fname).datagrams():
@@ -105,6 +138,7 @@ def decompress(fname):
 
 if __name__ == '__main__':
     for f in sys.argv[1:]:
+        comptest(f)
         compress(f)
         decompress(f)
 
