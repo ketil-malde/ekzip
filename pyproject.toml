@@ -9,3 +9,6 @@ dependencies = [
     "matplotlib>=3.10.7",
     "pywavelets>=1.9.0",
 ]
+
+[tool.uv.sources]
+ektools = { path = "../ektools" }

@@ -19,13 +19,13 @@ def compress1(signal, wavelet='db4', level=4, threshold_ratio=0.10):
 
 def decompress1(compressed_data, wavelet, level, shapes):
     '''Decompress data to a real-valued vector'''
-    compr_flat = np.frombuffer(zlib.decompress(compressed_data, dtype=CAST))
+    compr_flat = np.frombuffer(zlib.decompress(compressed_data), dtype=CAST)
     comp = []
     start = 0
     for shape in shapes:
-        size = shape[0]
-        comp.append(compr_flat[start:start + size].reshape(shape))
-        start += size
+        print(start, shape)
+        comp.append(compr_flat[start:start + shape].reshape(shape))
+        start += shape
 
     recon = pywt.waverec(comp, wavelet, mode='periodic')
     return recon

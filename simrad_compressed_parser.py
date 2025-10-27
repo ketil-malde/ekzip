@@ -142,11 +142,15 @@ class SimradRawZParser(_SimradDatagramParser):
 
                 if data['data_type'] & 0b1:
                     print('Unpacking zpower')
-                    zpowerlen = struct.unpack('i', raw_string[indx:indx + 4])[0]
-                    print(zpowerlen)
+                    zpowershapes = struct.unpack('i', raw_string[indx:indx + 4])[0]
                     indx += 4
-                    data['zpower'] = np.frombuffer(raw_string[indx:indx + 4 * zpowerlen])
-                    indx += 4 * zpowerlen
+                    data['zpshapes'] = struct.unpack("%di" % zpowershapes, raw_string[indx:indx + 4 * zpowershapes])
+                    indx += 4 * zpowershapes
+
+                    zpowerlen = struct.unpack('i', raw_string[indx:indx + 4])[0]
+                    indx += 4
+                    data['zpower'] = raw_string[indx:indx + zpowerlen]
+                    indx += zpowerlen
                     # data['power'] = np.frombuffer(raw_string[indx:indx + block_size], dtype='int16')
                     # indx += block_size
                 else:
@@ -253,12 +257,14 @@ class SimradRawZParser(_SimradDatagramParser):
 
                 if data['data_type'] & 0b0001:
                     print('Packing zpower')
-                    # Add the compressed power data
-                    # datagram_fmt += '%dh' % (data['count'])
-                    # datagram_contents.extend(data['power'])
+                    zpowershapes = len(data['zpshapes'])
+                    datagram_fmt += 'i%di' % zpowershapes
+                    for d in [zpowershapes, *data['zpshapes']]:
+                        datagram_contents.append(d)
+
                     zpowerlen = len(data['zpower'])
                     print(zpowerlen)
-                    datagram_fmt += 'i%di' % zpowerlen
+                    datagram_fmt += 'i%dB' % zpowerlen
                     datagram_contents.append(zpowerlen)
                     datagram_contents.extend(data['zpower'])
 
@@ -279,7 +285,7 @@ class SimradRawZParser(_SimradDatagramParser):
                         # datagram_fmt += '%dB' % (data['complex'].shape[0] * 2 * 8)
                         assert False, 'not implemented here'
                     else:
-                        # Using 32 bit floats
+                        # storing level, len shapes, and the shapes
                         datagram_fmt += 'ii%di' % len(data['zshapes'])
                         for d in [data['zlevel'], len(data['zshapes']), *data['zshapes']]:
                             datagram_contents.append(d)
