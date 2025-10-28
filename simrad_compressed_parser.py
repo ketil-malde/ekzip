@@ -148,6 +148,8 @@ class SimradRawZParser(_SimradDatagramParser):
                     indx += 4 * zpowershapes
 
                     zpowerlen = struct.unpack('i', raw_string[indx:indx + 4])[0]
+                    print('..unpacked zplen:', zpowerlen, 'zpshapes:', data['zpshapes'])
+
                     indx += 4
                     data['zpower'] = raw_string[indx:indx + zpowerlen]
                     indx += zpowerlen
@@ -263,7 +265,7 @@ class SimradRawZParser(_SimradDatagramParser):
                         datagram_contents.append(d)
 
                     zpowerlen = len(data['zpower'])
-                    print(zpowerlen)
+                    print('..packing zplen:', zpowerlen, 'shapes:', data['zpshapes'])
                     datagram_fmt += 'i%dB' % zpowerlen
                     datagram_contents.append(zpowerlen)
                     datagram_contents.extend(data['zpower'])

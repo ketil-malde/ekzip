@@ -138,8 +138,11 @@ def decompress(fname):
 
 if __name__ == '__main__':
     for f in sys.argv[1:]:
+        print('***Testing***')
         comptest(f)
+        print('***Compressing***')
         compress(f)
+        print('***Decompressing***')
         decompress(f)
 
 

@@ -23,7 +23,6 @@ def decompress1(compressed_data, wavelet, level, shapes):
     comp = []
     start = 0
     for shape in shapes:
-        print(start, shape)
         comp.append(compr_flat[start:start + shape].reshape(shape))
         start += shape
 
