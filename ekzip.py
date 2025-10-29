@@ -108,6 +108,19 @@ def comptest(fname):
             for k in data.keys():
                 if k not in rdata.keys():
                     print(f'Warning: did not find field "{k}" in recovered data')
+            for k in ['complex', 'angles', 'power']:
+                if k in data.keys() and data[k] is not None:
+                    s1 = data[k].shape
+                    s2 = rdata[k].shape
+                    t1 = data[k].dtype
+                    t2 = rdata[k].dtype
+                    if s1 != s2: print(f'Shape of field {k} changed from {s1} to {s2}')
+                    if t1 != t2: print(f'Type of field {k} changed from {t1} to {t2}')
+                    # print(f'Before: {data[k][:20]}')
+                    # print(f'After: {rdata[k][:20]}')
+                    absdiffs = np.abs(data[k] - rdata[k])  # WTF?  Adding: .astype(float)  changes MSE?
+                    compr = len(zdata["z" + k]) / len(data[k])
+                    print(f'{k} Compression: {100 * (1 - compr):.1f}%, MAE: {np.mean(absdiffs):.1f}, MAPE: {np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%, MSE: {np.mean(absdiffs**2):.1f}')
             print()
 
 
