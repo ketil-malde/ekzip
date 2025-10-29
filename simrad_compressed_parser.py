@@ -141,14 +141,13 @@ class SimradRawZParser(_SimradDatagramParser):
                 indx = self.header_size(version)
 
                 if data['data_type'] & 0b1:
-                    print('Unpacking zpower')
                     zpowershapes = struct.unpack('i', raw_string[indx:indx + 4])[0]
                     indx += 4
                     data['zpshapes'] = struct.unpack("%di" % zpowershapes, raw_string[indx:indx + 4 * zpowershapes])
                     indx += 4 * zpowershapes
 
                     zpowerlen = struct.unpack('i', raw_string[indx:indx + 4])[0]
-                    print('..unpacked zplen:', zpowerlen, 'zpshapes:', data['zpshapes'])
+                    # print('..unpacked zplen:', zpowerlen, 'zpshapes:', data['zpshapes'])
 
                     indx += 4
                     data['zpower'] = raw_string[indx:indx + zpowerlen]
@@ -258,14 +257,13 @@ class SimradRawZParser(_SimradDatagramParser):
             if data['count'] > 0:
 
                 if data['data_type'] & 0b0001:
-                    print('Packing zpower')
                     zpowershapes = len(data['zpshapes'])
                     datagram_fmt += 'i%di' % zpowershapes
                     for d in [zpowershapes, *data['zpshapes']]:
                         datagram_contents.append(d)
 
                     zpowerlen = len(data['zpower'])
-                    print('..packing zplen:', zpowerlen, 'shapes:', data['zpshapes'])
+                    # print('..packing zplen:', zpowerlen, 'shapes:', data['zpshapes'])
                     datagram_fmt += 'i%dB' % zpowerlen
                     datagram_contents.append(zpowerlen)
                     datagram_contents.extend(data['zpower'])

@@ -5,7 +5,6 @@ from ektools import ekfile  # , parse
 from simrad_parsers import SimradRawParser
 from simrad_compressed_parser import SimradRawZParser
 import numpy as np
-
 import wavelets as W
 
 # or just use dgram_write from eksplit?  Or finalize_datagram?
@@ -92,14 +91,17 @@ def comptest(fname):
             zr = SimradRawZParser().from_string(zd[4:], len(zd) - 8)
             rdata = raz2raw(zr)
 
-            print('Differences:')
+            added_fields = []
             for k in zdata.keys():
                 if k not in data.keys():
-                    print(f'Compressed data contains new field "{k}".')
+                    added_fields.append(k)
+            if added_fields: print(f'Compressed data contains new fields {added_fields}.')
+            lost_fields = []
             for k in data.keys():
                 if k not in zdata.keys():
-                    print(f'Compressed data do not contain field "{k}".')
-            print('Warnings:')                    
+                    lost_fields.append(k)
+            print(f'Compressed data do not contain fields {lost_fields}.')
+
             for k in rdata.keys():
                 if k not in data.keys():
                     print(f'Warning: found field "{k}" in recovered data, not present in original')
@@ -120,7 +122,8 @@ def comptest(fname):
                     # print(f'After: {rdata[k][:20]}')
                     absdiffs = np.abs(data[k] - rdata[k])  # WTF?  Adding: .astype(float)  changes MSE?
                     compr = len(zdata["z" + k]) / len(data[k])
-                    print(f'{k} Compression: {100 * (1 - compr):.1f}%, MAE: {np.mean(absdiffs):.1f}, MAPE: {np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%, MSE: {np.mean(absdiffs**2):.1f}')
+                    print(f'Size of field {k} compressed from {len(data[k])} to {len(zdata["z"+k])} ({100 * compr:.1f}%), ', end='')
+                    print(f'MAE: {np.mean(absdiffs):.1f}, MAPE: {np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%, MSE: {np.mean(absdiffs**2):.1f}')
             print()
 
 
@@ -138,16 +141,19 @@ def compress(fname):
 
 
 def decompress(fname):
-    '''Process a RAW file and replace RAZx datagrams with RAWx uncompressed datagrams.'''    
+    '''Process a RAW file and replace RAZx datagrams with RAWx uncompressed datagrams.'''
     with open(fname + '.new', 'wb') as outfile:
         for dgram in ekfile(fname + '.z').datagrams():
             if dgram[0] == 'RAZ3':
+                print('decompressing:', dgram[:3])
                 zdata = SimradRawZParser().from_string(dgram[3], len(dgram[3]))
                 rdata = raz2raw(zdata)
                 ndgram = SimradRawParser().to_string(rdata)
                 outfile.write(ndgram)
             else:
                 dgram_write(outfile, dgram[3])
+
+# todo: implement range clipping and bottom detection?
 
 
 if __name__ == '__main__':
