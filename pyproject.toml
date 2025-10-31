@@ -1,7 +1,7 @@
 [project]
 name = "ekzip"
 version = "0.1.0"
-description = "Add your description here"
+description = "Compression utility for Simrad echosounder data (RAW files)."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,3 +12,7 @@ dependencies = [
 
 [tool.uv.sources]
 ektools = { path = "../ektools" }
+
+[project.scripts]
+ekzip = "ekzip:main"
+ekunzip = "ekzip:main"
