@@ -6,6 +6,9 @@ from simrad_parsers import SimradRawParser
 from simrad_compressed_parser import SimradRawZParser
 import numpy as np
 import wavelets as W
+import argparse
+import os
+
 
 # or just use dgram_write from eksplit?  Or finalize_datagram?
 def dgram_write(f, dgram):
@@ -91,16 +94,16 @@ def comptest(fname):
             zr = SimradRawZParser().from_string(zd[4:], len(zd) - 8)
             rdata = raz2raw(zr)
 
-            added_fields = []
-            for k in zdata.keys():
-                if k not in data.keys():
-                    added_fields.append(k)
-            if added_fields: print(f'Compressed data contains new fields {added_fields}.')
-            lost_fields = []
-            for k in data.keys():
-                if k not in zdata.keys():
-                    lost_fields.append(k)
-            print(f'Compressed data do not contain fields {lost_fields}.')
+            # added_fields = []
+            # for k in zdata.keys():
+            #     if k not in data.keys():
+            #         added_fields.append(k)
+            # if added_fields: print(f'Compressed data contains new fields {added_fields}.')
+            # lost_fields = []
+            # for k in data.keys():
+            #     if k not in zdata.keys():
+            #         lost_fields.append(k)
+            # if lost_fields: print(f'Compressed data do not contain fields {lost_fields}.')
 
             for k in rdata.keys():
                 if k not in data.keys():
@@ -122,14 +125,13 @@ def comptest(fname):
                     # print(f'After: {rdata[k][:20]}')
                     absdiffs = np.abs(data[k] - rdata[k])  # WTF?  Adding: .astype(float)  changes MSE?
                     compr = len(zdata["z" + k]) / len(data[k])
-                    print(f'Size of field {k} compressed from {len(data[k])} to {len(zdata["z"+k])} ({100 * compr:.1f}%), ', end='')
-                    print(f'MAE: {np.mean(absdiffs):.1f}, MAPE: {np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%, MSE: {np.mean(absdiffs**2):.1f}')
-            print()
+                    print(f'Field:\t{k}\tUncomp:\t{len(data[k]):6}\tComp:\t{len(zdata["z"+k]):6}\t{100 * compr:.1f}%\t', end='')
+                    print(f'MAE:\t{np.mean(absdiffs):.1f}\tMAPE:\t{np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%\tMSE:\t{np.mean(absdiffs**2):.1f}')
 
 
 def compress(fname):
     '''Process a RAW file and replace RAWx datagrams with RAZx compressed datagrams.'''
-    with open(fname + '.z', 'wb') as outfile:
+    with open(fname + '.ekz', 'wb') as outfile:
         for dgram in ekfile(fname).datagrams():
             if dgram[0] == 'RAW3':   # replace with compressed version
                 data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
@@ -156,24 +158,26 @@ def decompress(fname):
 # todo: implement range clipping and bottom detection?
 
 
+def main():
+    # argparser
+    parser = argparse.ArgumentParser(description="Compress or decompress Simrad RAW files.")
+    parser.add_argument('files', help="Files to process", nargs="+")
+    parser.add_argument('-d', '--decompress', action='store_true', help="Decompress file")
+    parser.add_argument('--debug', action='store_true', help="Test and output statistics")
+
+    args = parser.parse_args()
+    print('args', args)
+    decompress_mode = args.decompress or 'unzip' in os.path.basename(sys.argv[0])
+
+    for f in args.files:
+        print(f)
+        if decompress_mode:
+            decompress(f)
+        elif args.debug:
+            comptest(f)
+        else:
+            compress(f)
+
+
 if __name__ == '__main__':
-    for f in sys.argv[1:]:
-        print('***Testing***')
-        comptest(f)
-        print('***Compressing***')
-        compress(f)
-        print('***Decompressing***')
-        decompress(f)
-
-
-''' Old code:
-
-                data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
-                # data = raw2raz(data)
-                newdg = SimradRawZParser().to_string(data)
-                try:
-                    data2 = SimradRawParser().from_string(newdg[4:-4], len(newdg)-8)  # should fail
-                except Exception as e:
-                    pass
-                data2 = SimradRawZParser().from_string(newdg[4:-4], len(newdg)-8)  # should work
-'''
+    main()
