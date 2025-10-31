@@ -125,55 +125,52 @@ def comptest(fname):
                     # print(f'After: {rdata[k][:20]}')
                     absdiffs = np.abs(data[k] - rdata[k])  # WTF?  Adding: .astype(float)  changes MSE?
                     compr = len(zdata["z" + k]) / len(data[k])
-                    print(f'Field:\t{k}\tUncomp:\t{len(data[k]):6}\tComp:\t{len(zdata["z"+k]):6}\t{100 * compr:.1f}%\t', end='')
+                    print(f'Field:\t{k}\tUncomp:\t{len(data[k]):6}\tComp:\t{len(zdata["z" + k]):6}\t{100 * compr:.1f}%\t', end='')
                     print(f'MAE:\t{np.mean(absdiffs):.1f}\tMAPE:\t{np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%\tMSE:\t{np.mean(absdiffs**2):.1f}')
 
 
 def compress(fname):
     '''Process a RAW file and replace RAWx datagrams with RAZx compressed datagrams.'''
-    with open(fname + '.ekz', 'wb') as outfile:
-        for dgram in ekfile(fname).datagrams():
-            if dgram[0] == 'RAW3':   # replace with compressed version
-                data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
-                zdata = raw2raz(data)
-                zd = SimradRawZParser().to_string(zdata)
-                outfile.write(zd)
-            else:
-                dgram_write(outfile, dgram[3])
+    outfile = sys.stdout.buffer if fname == '-' else open(fname + '.ekz', 'wb')
+    for dgram in ekfile(fname).datagrams():
+        if dgram[0] == 'RAW3':   # replace with compressed version
+            data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
+            zdata = raw2raz(data)
+            zd = SimradRawZParser().to_string(zdata)
+            outfile.write(zd)
+        else:
+            dgram_write(outfile, dgram[3])
+    if fname != '-': outfile.close()
 
 
 def decompress(fname):
     '''Process a RAW file and replace RAZx datagrams with RAWx uncompressed datagrams.'''
-    with open(fname + '.new', 'wb') as outfile:
-        for dgram in ekfile(fname + '.z').datagrams():
-            if dgram[0] == 'RAZ3':
-                print('decompressing:', dgram[:3])
-                zdata = SimradRawZParser().from_string(dgram[3], len(dgram[3]))
-                rdata = raz2raw(zdata)
-                ndgram = SimradRawParser().to_string(rdata)
-                outfile.write(ndgram)
-            else:
-                dgram_write(outfile, dgram[3])
-
-# todo: implement range clipping and bottom detection?
+    outfile = sys.stdout.buffer if fname == '-' else open(fname + '.new', 'wb')
+    for dgram in ekfile(fname).datagrams():
+        if dgram[0] == 'RAZ3':
+            zdata = SimradRawZParser().from_string(dgram[3], len(dgram[3]))
+            rdata = raz2raw(zdata)
+            ndgram = SimradRawParser().to_string(rdata)
+            outfile.write(ndgram)
+        else:
+            dgram_write(outfile, dgram[3])
+    if fname != '-': outfile.close()
 
 
 def main():
-    # argparser
     parser = argparse.ArgumentParser(description="Compress or decompress Simrad RAW files.")
-    parser.add_argument('files', help="Files to process", nargs="+")
+    parser.add_argument('files', help="Files to process", nargs="*")
     parser.add_argument('-d', '--decompress', action='store_true', help="Decompress file")
-    parser.add_argument('--debug', action='store_true', help="Test and output statistics")
+    parser.add_argument('--statistics', action='store_true', help="Test execution and output statistics")
 
     args = parser.parse_args()
-    print('args', args)
     decompress_mode = args.decompress or 'unzip' in os.path.basename(sys.argv[0])
+    if not args.files: args.files = ['-']
 
     for f in args.files:
-        print(f)
         if decompress_mode:
             decompress(f)
-        elif args.debug:
+        elif args.statistics:
             comptest(f)
         else:
             compress(f)
