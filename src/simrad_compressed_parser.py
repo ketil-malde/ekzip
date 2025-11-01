@@ -2,7 +2,8 @@
 from simrad_parsers import _SimradDatagramParser
 import struct
 import numpy as np
-from date_conversion import nt_to_unix
+from ektools.date_conversion import nt_to_unix
+
 
 class SimradRawZParser(_SimradDatagramParser):
     '''

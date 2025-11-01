@@ -36,7 +36,7 @@ import re
 import numpy as np
 from collections import OrderedDict
 from lxml import etree as ET
-from date_conversion import nt_to_unix
+from ektools.date_conversion import nt_to_unix
 
 
 __all__ = ['SimradNMEAParser', 'SimradDepthParser', 'SimradBottomParser',
