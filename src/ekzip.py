@@ -2,7 +2,7 @@
 import sys
 import struct
 from ektools import ekfile  # , parse
-from simrad_parsers import SimradRawParser
+from ektools.simrad_parsers import SimradRawParser
 from simrad_compressed_parser import SimradRawZParser
 import numpy as np
 import wavelets as W

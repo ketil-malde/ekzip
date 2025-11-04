@@ -1,7 +1,7 @@
 # The RAW parser, only with data compression
-from simrad_parsers import _SimradDatagramParser
 import struct
 import numpy as np
+from ektools.simrad_parsers import _SimradDatagramParser
 from ektools.date_conversion import nt_to_unix
 
 
