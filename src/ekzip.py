@@ -129,9 +129,17 @@ def comptest(fname):
                     print(f'MAE:\t{np.mean(absdiffs):.1f}\tMAPE:\t{np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%\tMSE:\t{np.mean(absdiffs**2):.1f}')
 
 
-def compress(fname):
+def compress(fname, ofile=None):
     '''Process a RAW file and replace RAWx datagrams with RAZx compressed datagrams.'''
-    outfile = sys.stdout.buffer if fname == '-' else open(fname + '.ekz', 'wb')
+    if ofile:
+        outfile = open(ofile, 'wb')
+    elif fname == '-' or ofile == '-':
+        outfile = sys.stdout.buffer
+    elif not os.path.exists(fname + '.ekz'):
+        outfile = open(fname + '.ekz', 'wb')
+    else:
+        print('Output file exists?')
+        exit()
     for dgram in ekfile(fname).datagrams():
         if dgram[0] == 'RAW3':   # replace with compressed version
             data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
@@ -143,9 +151,17 @@ def compress(fname):
     if fname != '-': outfile.close()
 
 
-def decompress(fname):
+def decompress(fname, ofile=None):
     '''Process a RAW file and replace RAZx datagrams with RAWx uncompressed datagrams.'''
-    outfile = sys.stdout.buffer if fname == '-' else open(fname + '.new', 'wb')
+    if ofile:
+        outfile = open(ofile, 'wb')
+    elif fname == '-' or ofile == '-':
+        outfile = sys.stdout.buffer
+    elif fname.endswith('.ekz') and not os.path.exists(fname[:-4]):
+        outfile = open(fname[:-4], 'wb')
+    else:
+        print('Output file exists, or input file has unknown suffix')
+        exit()
     for dgram in ekfile(fname).datagrams():
         if dgram[0] == 'RAZ3':
             zdata = SimradRawZParser().from_string(dgram[3], len(dgram[3]))
@@ -161,19 +177,23 @@ def main():
     parser = argparse.ArgumentParser(description="Compress or decompress Simrad RAW files.")
     parser.add_argument('files', help="Files to process", nargs="*")
     parser.add_argument('-d', '--decompress', action='store_true', help="Decompress file")
+    parser.add_argument('-o', help="Output file name")
     parser.add_argument('--statistics', action='store_true', help="Test execution and output statistics")
 
     args = parser.parse_args()
     decompress_mode = args.decompress or 'unzip' in os.path.basename(sys.argv[0])
-    if not args.files: args.files = ['-']
 
+    if not args.files: args.files = ['-']
+    if args.o and len(args.files) != 1:
+        print('Error: refusing to compress multiple files when output file is specified')
+        exit()
     for f in args.files:
         if decompress_mode:
-            decompress(f)
+            decompress(f, args.o)
         elif args.statistics:
             comptest(f)
         else:
-            compress(f)
+            compress(f, args.o)
 
 
 if __name__ == '__main__':
