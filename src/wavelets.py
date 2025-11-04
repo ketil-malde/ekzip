@@ -1,6 +1,6 @@
 import numpy as np
 import pywt
-import zlib
+import zstd
 
 CAST = np.float16
 
@@ -12,14 +12,14 @@ def compress1(signal, wavelet='db4', level=4, threshold_ratio=0.10):
     coeffs_flat = np.concatenate([c for c in coeffs])
     threshold = np.percentile(np.abs(coeffs_flat), 100 * (1 - threshold_ratio))
     comp = [pywt.threshold(c, threshold, mode='soft') for c in coeffs]
-    compressed_data = zlib.compress(np.concatenate(comp).astype(CAST).tobytes())
+    compressed_data = zstd.compress(np.concatenate(comp).astype(CAST).tobytes())
 
     return compressed_data, wavelet, level, cshapes
 
 
 def decompress1(compressed_data, wavelet, level, shapes):
     '''Decompress data to a real-valued vector'''
-    compr_flat = np.frombuffer(zlib.decompress(compressed_data), dtype=CAST)
+    compr_flat = np.frombuffer(zstd.decompress(compressed_data), dtype=CAST)
     comp = []
     start = 0
     for shape in shapes:
@@ -49,16 +49,16 @@ def compress(signal, wavelet='db4', level=4, threshold_ratio=0.10):
     comp_real_flat = np.concatenate(comp_real).astype(CAST)
     comp_imag_flat = np.concatenate(comp_imag).astype(CAST)
     compressed_data = [
-        zlib.compress(comp_real_flat.tobytes()),
-        zlib.compress(comp_imag_flat.tobytes())
+        zstd.compress(comp_real_flat.tobytes()),
+        zstd.compress(comp_imag_flat.tobytes())
     ]
 
     return compressed_data, wavelet, level, coeffs_shapes
 
 
 def decompress(compressed_data, wavelet, level, shapes):
-    comp_real_flat = np.frombuffer(zlib.decompress(compressed_data[0]), dtype=CAST)
-    comp_imag_flat = np.frombuffer(zlib.decompress(compressed_data[1]), dtype=CAST)
+    comp_real_flat = np.frombuffer(zstd.decompress(compressed_data[0]), dtype=CAST)
+    comp_imag_flat = np.frombuffer(zstd.decompress(compressed_data[1]), dtype=CAST)
 
     # Reshape flattened coefficients back into lists of arrays
     comp_real = []
