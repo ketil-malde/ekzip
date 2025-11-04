@@ -5,13 +5,10 @@ description = "Compression utility for Simrad echosounder data (RAW files)."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "ektools>=0.1.1",
+    "ektools>=0.1.2",
     "matplotlib>=3.10.7",
     "pywavelets>=1.9.0",
 ]
-
-[tool.uv.sources]
-ektools = { path = "../ektools" }
 
 [project.scripts]
 ekzip = "ekzip:main"
