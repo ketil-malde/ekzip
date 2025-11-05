@@ -65,7 +65,7 @@ def raz2raw(data):  # dgram:
                 complex = []
                 for i in range(data['n_complex']):
                     zd = W.decompress(data['zcomplex'][i], 'db4', level=level, shapes=shapes)
-                    complex.append(zd)  # todo: clip to n_complex?
+                    complex.append(zd[:data['count']])
                 data['complex'] = np.column_stack(complex)
             else:
                 data['complex'] = None
