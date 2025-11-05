@@ -123,11 +123,20 @@ def comptest(fname, level, threshold_ratio):
                     if t1 != t2: print(f'Type of field {k} changed from {t1} to {t2}')
                     # print(f'Before: {data[k][:20]}')
                     # print(f'After: {rdata[k][:20]}')
-                    absdiffs = np.abs(data[k] - rdata[k])  # WTF?  Adding: .astype(float)  changes MSE?
-                    compr = len(zdata["z" + k]) / len(data[k])
-                    print(f'Field:\t{k}\tUncomp:\t{len(data[k]):6}\tComp:\t{len(zdata["z" + k]):6}\t{100 * compr:.1f}%\t', end='')
-                    print(f'MAE:\t{np.mean(absdiffs):.1f}\tMAPE:\t{np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%\tMSE:\t{np.mean(absdiffs**2):.1f}')
+                    diff = data[k] - rdata[k]
+                    abs_diff = np.abs(diff).astype(float)
 
+                    # Handle division by zero in MAPE
+                    with np.errstate(divide='ignore', invalid='ignore'):
+                        mape = np.mean(100 * np.abs(diff / data[k].astype(float)))
+                        mape = np.nan_to_num(mape)  # replace inf/nan with 0 or handle separately
+                        compr = len(zdata["z" + k]) / len(data[k])
+
+                    print(f'Field:\t{k}\tUncomp:\t{len(data[k]):6}\tComp:\t{len(zdata["z" + k]):6}\t'
+                          f'{100 * compr:.1f}%\t', end='')
+                    print(f'MAE:\t{np.mean(abs_diff):.1f}\t'
+                          f'MAPE:\t{mape:.1f}%\t'
+                          f'MSE:\t{np.mean(abs_diff**2):.1f}')
 
 
 def compress(fname, ofile=None, level=3, threshold=0.2):
