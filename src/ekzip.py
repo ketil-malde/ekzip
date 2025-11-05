@@ -84,6 +84,20 @@ def raz2raw(data):  # dgram:
     return data
 
 
+def stats(dk, rk, eps=1e-8):
+    assert dk.dtype == dk.dtype, f'Type mismatch, original: {dk.dtype}, reconstructed: {rk.dtype}'
+    assert dk.shape == rk.shape, f'Shape mismatch, original: {dk.shape}, reconstructed: {rk.shape}'
+    diff = dk - rk
+    abs_diff = np.abs(diff)
+    mae = np.mean(abs_diff)
+    mse = np.mean(abs_diff ** 2)
+    denom = np.abs(dk)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        mape = np.mean(np.abs(diff / (dk + eps * (denom == 0))))
+        mape = np.nan_to_num(mape) * 100
+    return mae, mse, mape
+
+
 def comptest(fname, level, threshold_ratio):
     '''Test compression functionality by compressing and decompressing all RAW datagrams'''
     for dgram in ekfile(fname).datagrams():
@@ -115,28 +129,17 @@ def comptest(fname, level, threshold_ratio):
                     print(f'Warning: did not find field "{k}" in recovered data')
             for k in ['complex', 'angles', 'power']:
                 if k in data.keys() and data[k] is not None:
-                    s1 = data[k].shape
-                    s2 = rdata[k].shape
-                    t1 = data[k].dtype
-                    t2 = rdata[k].dtype
-                    if s1 != s2: print(f'Shape of field {k} changed from {s1} to {s2}')
-                    if t1 != t2: print(f'Type of field {k} changed from {t1} to {t2}')
-                    # print(f'Before: {data[k][:20]}')
-                    # print(f'After: {rdata[k][:20]}')
-                    diff = data[k] - rdata[k]
-                    abs_diff = np.abs(diff).astype(float)
-
-                    # Handle division by zero in MAPE
-                    with np.errstate(divide='ignore', invalid='ignore'):
-                        mape = np.mean(100 * np.abs(diff / data[k].astype(float)))
-                        mape = np.nan_to_num(mape)  # replace inf/nan with 0 or handle separately
-                        compr = len(zdata["z" + k]) / len(data[k])
-
-                    print(f'Field:\t{k}\tUncomp:\t{len(data[k]):6}\tComp:\t{len(zdata["z" + k]):6}\t'
-                          f'{100 * compr:.1f}%\t', end='')
-                    print(f'MAE:\t{np.mean(abs_diff):.1f}\t'
-                          f'MAPE:\t{mape:.1f}%\t'
-                          f'MSE:\t{np.mean(abs_diff**2):.1f}')
+                    dsize = data[k].nbytes
+                    if k == 'complex':
+                        zsize = 0
+                        for z in zdata['z' + k]:
+                            zsize += sum(len(y) for y in z)
+                    else:
+                        zsize = zdata['z' + k].nbytes 
+                    mae, mse, mape = stats(data[k], rdata[k])
+                    print(f'Field:\t{k}\tUncomp:\t{dsize:6}\tComp:\t{zsize:6}\t'
+                          f'{100.0 * zsize / dsize:.1f}%\t', end='')
+                    print(f'MAE:\t{mae:.1f}\tMAPE:\t{mape:.1f}%\tMSE:\t{mse:.1f}')
 
 
 def compress(fname, ofile=None, level=3, threshold=0.2):
