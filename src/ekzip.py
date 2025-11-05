@@ -84,12 +84,12 @@ def raz2raw(data):  # dgram:
     return data
 
 
-def comptest(fname):
+def comptest(fname, level, threshold_ratio):
     '''Test compression functionality by compressing and decompressing all RAW datagrams'''
     for dgram in ekfile(fname).datagrams():
         if dgram[0] == 'RAW3':
             data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
-            zdata = raw2raz(data)
+            zdata = raw2raz(data, level=level, threshold_ratio=threshold_ratio)
             zd = SimradRawZParser().to_string(zdata)
             zr = SimradRawZParser().from_string(zd[4:], len(zd) - 8)
             rdata = raz2raw(zr)
@@ -129,7 +129,8 @@ def comptest(fname):
                     print(f'MAE:\t{np.mean(absdiffs):.1f}\tMAPE:\t{np.mean(100 * np.abs((data[k] - rdata[k]) / data[k])):.1f}%\tMSE:\t{np.mean(absdiffs**2):.1f}')
 
 
-def compress(fname, ofile=None):
+
+def compress(fname, ofile=None, level=3, threshold=0.2):
     '''Process a RAW file and replace RAWx datagrams with RAZx compressed datagrams.'''
     if ofile:
         outfile = open(ofile, 'wb')
@@ -143,7 +144,7 @@ def compress(fname, ofile=None):
     for dgram in ekfile(fname).datagrams():
         if dgram[0] == 'RAW3':   # replace with compressed version
             data = SimradRawParser().from_string(dgram[3], len(dgram[3]))
-            zdata = raw2raz(data)
+            zdata = raw2raz(data, level=level, threshold_ratio=threshold)
             zd = SimradRawZParser().to_string(zdata)
             outfile.write(zd)
         else:
@@ -179,6 +180,9 @@ def main():
     parser.add_argument('-d', '--decompress', action='store_true', help="Decompress file")
     parser.add_argument('-o', help="Output file name")
     parser.add_argument('--statistics', action='store_true', help="Test execution and output statistics")
+    # Compression level options:
+    parser.add_argument('--level', type=int, choices=range(2, 6), default=3, help='Compression wavelet levels, from 2 to 6')
+    parser.add_argument('--threshold', type=float, default=0.2, help='Compression threshold.')
 
     args = parser.parse_args()
     decompress_mode = args.decompress or 'unzip' in os.path.basename(sys.argv[0])
@@ -191,9 +195,9 @@ def main():
         if decompress_mode:
             decompress(f, args.o)
         elif args.statistics:
-            comptest(f)
+            comptest(f, args.level, args.threshold)
         else:
-            compress(f, args.o)
+            compress(f, args.o, args.level, args.threshold)
 
 
 if __name__ == '__main__':
