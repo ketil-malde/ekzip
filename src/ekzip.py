@@ -139,7 +139,7 @@ def comptest(fname, level, threshold_ratio):
                     mae, mse, mape = stats(data[k], rdata[k])
                     print(f'Field:\t{k}\tUncomp:\t{dsize:6}\tComp:\t{zsize:6}\t'
                           f'{100.0 * zsize / dsize:.1f}%\t', end='')
-                    print(f'MAE:\t{mae:.1f}\tMAPE:\t{mape:.1f}%\tMSE:\t{mse:.1f}')
+                    print(f'MAE:\t{mae}\tMAPE:\t{mape}%\tMSE:\t{mse}')
 
 
 def compress(fname, ofile=None, level=3, threshold=0.2):
